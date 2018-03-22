@@ -13,7 +13,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"code.cloudfoundry.org/bytefmt"
@@ -72,13 +71,11 @@ var httpClient = &http.Client{Transport: HTTPTransport}
 
 func getS3Client() *s3.S3 {
 	// Build our config
-	creds := credentials.NewStaticCredentials(access_key, secret_key, "")
 	loglevel := aws.LogOff
 	// Build the rest of the configuration
 	awsConfig := &aws.Config{
 		Region:               aws.String("us-east-1"),
 		Endpoint:             aws.String(url_host),
-		Credentials:          creds,
 		LogLevel:             &loglevel,
 		S3ForcePathStyle:     aws.Bool(true),
 		S3Disable100Continue: aws.Bool(true),
@@ -100,7 +97,7 @@ func createBucket() {
 	// Create our bucket (may already exist without error)
 	in := &s3.CreateBucketInput{Bucket: aws.String(bucket)}
 	if _, err := client.CreateBucket(in); err != nil {
-		log.Fatalf("FATAL: Unable to create bucket %s (is your access and secret correct?): %v", bucket, err)
+		log.Fatalf("FATAL: Unable to create bucket %s (check your credentials/permissions): %v", bucket, err)
 	}
 }
 
@@ -270,8 +267,6 @@ func main() {
 
 	// Parse command line
 	myflag := flag.NewFlagSet("myflag", flag.ExitOnError)
-	myflag.StringVar(&access_key, "a", "", "Access key")
-	myflag.StringVar(&secret_key, "s", "", "Secret key")
 	myflag.StringVar(&url_host, "u", "http://s3.wasabisys.com", "URL for host with method prefix")
 	myflag.StringVar(&bucket, "b", "wasabi-benchmark-bucket", "Bucket for testing")
 	myflag.IntVar(&duration_secs, "d", 60, "Duration of each test in seconds")
@@ -284,12 +279,6 @@ func main() {
 	}
 
 	// Check the arguments
-	if access_key == "" {
-		log.Fatal("Missing argument -a for access key.")
-	}
-	if secret_key == "" {
-		log.Fatal("Missing argument -s for secret key.")
-	}
 	var err error
 	if object_size, err = bytefmt.ToBytes(sizeArg); err != nil {
 		log.Fatalf("Invalid -z argument for object size: %v", err)
