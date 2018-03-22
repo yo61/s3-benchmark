@@ -77,7 +77,7 @@ func getS3Client() *s3.S3 {
 	awsConfig := &aws.Config{
 		Region:               aws.String("us-east-1"),
 		Endpoint:             aws.String(url_host),
-    Credentials:          credentials.NewSharedCredentials()
+    Credentials:          credentials.NewSharedCredentials(),
 		LogLevel:             &loglevel,
 		S3ForcePathStyle:     aws.Bool(true),
 		S3Disable100Continue: aws.Bool(true),
