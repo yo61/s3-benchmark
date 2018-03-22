@@ -13,7 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-  "github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"code.cloudfoundry.org/bytefmt"
@@ -77,7 +77,6 @@ func getS3Client() *s3.S3 {
 	awsConfig := &aws.Config{
 		Region:               aws.String("us-east-1"),
 		Endpoint:             aws.String(url_host),
-    Credentials:          credentials.NewSharedCredentials("", ""),
 		LogLevel:             &loglevel,
 		S3ForcePathStyle:     aws.Bool(true),
 		S3Disable100Continue: aws.Bool(true),
@@ -201,23 +200,33 @@ func setSignature(req *http.Request) {
 }
 
 func runUpload(thread_num int) {
+
+	client := getS3Client()
 	for time.Now().Before(endtime) {
 		objnum := atomic.AddInt32(&upload_count, 1)
-		fileobj := bytes.NewReader(object_data)
-		prefix := fmt.Sprintf("%s/%s/Object-%d", url_host, bucket, objnum)
-		req, _ := http.NewRequest("PUT", prefix, fileobj)
-		req.Header.Set("Content-Length", strconv.FormatUint(object_size, 10))
-		req.Header.Set("Content-MD5", object_data_md5)
-		setSignature(req)
-		if resp, err := httpClient.Do(req); err != nil {
-			log.Fatalf("FATAL: Error uploading object %s: %v", prefix, err)
-		} else if resp.StatusCode != http.StatusOK {
-			fmt.Printf("Upload status %s: resp: %+v\n", resp.Status, resp)
-			if resp.Body != nil {
-				body, _ := ioutil.ReadAll(resp.Body)
-				fmt.Printf("Body: %s\n", string(body))
-			}
+		fileObj := bytes.NewReader(object_data)
+
+		input := &s3.PutObjectInput{
+			Body:	aws.ReadSeekCloser(fileObj),
+			Bucket:	aws.String(bucket),
+			Key:	aws.String(strconv.Itoa(int(objnum))),
 		}
+
+		_, err := client.PutObject(input)
+		if err != nil {
+			if aerr, ok := err.(awserr.Error); ok {
+				switch aerr.Code() {
+				default:
+					fmt.Println(aerr.Error())
+				}
+			} else {
+				// Print the error, cast err to awserr.Error to get the Code and
+				// Message from an error
+				fmt.Println(err.Error())
+			}
+			return
+		}
+
 	}
 	// Remember last done time
 	upload_finish = time.Now()
@@ -250,12 +259,12 @@ func runDelete(thread_num int) {
 		if objnum > upload_count {
 			break
 		}
-		prefix := fmt.Sprintf("%s/%s/Object-%d", url_host, bucket, objnum)
-		req, _ := http.NewRequest("DELETE", prefix, nil)
-		setSignature(req)
-		if _, err := httpClient.Do(req); err != nil {
-			log.Fatalf("FATAL: Error deleting object %s: %v", prefix, err)
-		}
+		// prefix := fmt.Sprintf("%s/%s/Object-%d", url_host, bucket, objnum)
+		// req, _ := http.NewRequest("DELETE", prefix, nil)
+		// setSignature(req)
+		// if _, err := httpClient.Do(req); err != nil {
+		//	log.Fatalf("FATAL: Error deleting object %s: %v", prefix, err)
+		// }
 	}
 	// Remember last done time
 	delete_finish = time.Now()
