@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+  "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"code.cloudfoundry.org/bytefmt"
@@ -76,6 +77,7 @@ func getS3Client() *s3.S3 {
 	awsConfig := &aws.Config{
 		Region:               aws.String("us-east-1"),
 		Endpoint:             aws.String(url_host),
+    Credentials:          credentials.NewSharedCredentials()
 		LogLevel:             &loglevel,
 		S3ForcePathStyle:     aws.Bool(true),
 		S3Disable100Continue: aws.Bool(true),
