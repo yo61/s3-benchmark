@@ -15,3 +15,6 @@
 
 # default binary
 s3-benchmark
+
+# default log file
+benchmark.log
