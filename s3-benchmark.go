@@ -22,13 +22,12 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 // Global variables
-var accessKey, secretKey, urlHost, bucket, copyBucket string
+var urlHost, bucket, copyBucket string
 var durationSecs, threads, loops int
 var objectSize uint64
 var objectData []byte
@@ -67,13 +66,11 @@ var httpClient = &http.Client{Transport: HTTPTransport}
 
 func getS3Client() *s3.S3 {
 	// Build our config
-	creds := credentials.NewStaticCredentials(accessKey, secretKey, "")
 	loglevel := aws.LogOff
 	// Build the rest of the configuration
 	awsConfig := &aws.Config{
 		Region:               aws.String("us-east-1"),
 		Endpoint:             aws.String(urlHost),
-		Credentials:          creds,
 		LogLevel:             &loglevel,
 		S3ForcePathStyle:     aws.Bool(true),
 		S3Disable100Continue: aws.Bool(true),
@@ -373,8 +370,6 @@ func main() {
 
 	// Parse command line
 	myflag := flag.NewFlagSet("myflag", flag.ExitOnError)
-	myflag.StringVar(&accessKey, "a", "", "Access key")
-	myflag.StringVar(&secretKey, "s", "", "Secret key")
 	myflag.StringVar(&urlHost, "u", "http://s3.wasabisys.com", "URL for host with method prefix")
 	myflag.StringVar(&bucket, "b", "wasabi-benchmark-bucket", "Bucket for testing")
 	myflag.IntVar(&durationSecs, "d", 60, "Duration of each test in seconds")
@@ -388,12 +383,6 @@ func main() {
 	}
 
 	// Check the arguments
-	if accessKey == "" {
-		log.Fatal("Missing argument -a for access key.")
-	}
-	if secretKey == "" {
-		log.Fatal("Missing argument -s for secret key.")
-	}
 	var err error
 	if objectSize, err = bytefmt.ToBytes(sizeArg); err != nil {
 		log.Fatalf("Invalid -z argument for object size: %v", err)
