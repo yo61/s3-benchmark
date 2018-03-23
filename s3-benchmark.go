@@ -370,7 +370,7 @@ func main() {
 
 	// Parse command line
 	myflag := flag.NewFlagSet("myflag", flag.ExitOnError)
-	myflag.StringVar(&urlHost, "u", "http://s3.wasabisys.com", "URL for host with method prefix")
+	myflag.StringVar(&urlHost, "u", "https://s3.amazonaws.com", "URL for host with method prefix")
 	myflag.StringVar(&bucket, "b", "wasabi-benchmark-bucket", "Bucket for testing")
 	myflag.IntVar(&durationSecs, "d", 60, "Duration of each test in seconds")
 	myflag.IntVar(&threads, "t", 1, "Number of threads to run")
